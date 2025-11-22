@@ -1,0 +1,741 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>WB Shop — Affiliate Catalog</title>
+    <meta
+      name="description"
+      content="WB Shop is a lightweight affiliate catalog powered by the Sovrn Commerce API."
+    />
+    <meta name="p:domain_verify" content="f49567f3762dc3f63a9e8d29c7a1b4a6" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: [
+                "Inter",
+                "Helvetica Neue",
+                "Helvetica",
+                "Arial",
+                "sans-serif",
+              ],
+            },
+            colors: {
+              accent: {
+                DEFAULT: "#0077FF",
+                dark: "#0057B7",
+              },
+            },
+            boxShadow: {
+              subtle: "0 12px 40px -24px rgba(0,0,0,0.25)",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      html,
+      body {
+        background-color: #ffffff;
+        color: #0a0a0a;
+        min-height: 100%;
+      }
+      ::selection {
+        background-color: rgba(0, 119, 255, 0.2);
+      }
+    </style>
+  </head>
+  <body class="antialiased font-sans">
+    <div id="app" class="px-6 sm:px-10 lg:px-12 py-12 sm:py-16 lg:py-24">
+      <header
+        class="max-w-6xl mx-auto flex flex-col sm:flex-row sm:items-end sm:justify-between gap-12 mb-16"
+      >
+        <div class="space-y-5 max-w-3xl">
+          <p class="text-xs uppercase tracking-[0.35em] text-neutral-500">
+            WB Shop
+          </p>
+          <h1
+            class="text-3xl sm:text-4xl lg:text-5xl font-semibold leading-tight"
+          >
+            Curated affiliate catalog featuring premium products sourced via
+            Sovrn Commerce.
+          </h1>
+          <p class="text-neutral-600 text-base sm:text-lg leading-relaxed">
+            Browse an evolving selection of high-impact goods arranged in a
+            precise, Swiss-style layout. Configure your Sovrn credentials to
+            sync live data, or explore the curated gallery as-is.
+          </p>
+        </div>
+        <div class="flex flex-col items-start gap-4 sm:items-end">
+          <button
+            type="button"
+            @click="openSettings = true"
+            class="inline-flex items-center gap-2 border border-neutral-900 px-4 py-2 text-sm font-medium uppercase tracking-wide transition hover:bg-neutral-900 hover:text-white"
+          >
+            Configure API
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+                d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364-6.364l-1.414 1.414M8.05 15.95l-1.414 1.414m0-11.314l1.414 1.414M18.364 18.364l-1.414-1.414"
+              />
+            </svg>
+          </button>
+          <div class="text-xs text-neutral-500 leading-relaxed max-w-[16rem]">
+            Sovrn Commerce requests use your publisher ID and API token. Stored
+            locally and never transmitted elsewhere.
+          </div>
+        </div>
+      </header>
+
+      <section class="max-w-6xl mx-auto mb-12 space-y-8">
+        <div class="grid gap-8 lg:grid-cols-[2fr,1fr] items-start">
+          <form @submit.prevent="handleSearch" class="flex flex-col gap-3">
+            <label class="text-xs uppercase tracking-[0.3em] text-neutral-500">
+              Search the catalog
+            </label>
+            <div class="flex flex-col sm:flex-row gap-3">
+              <input
+                v-model="query"
+                type="search"
+                placeholder="Search for anything — e.g. 'wireless headphones'"
+                class="w-full border border-neutral-200 focus:border-neutral-900 focus:ring-0 rounded-none px-4 py-3 text-base"
+              />
+              <button
+                type="submit"
+                class="inline-flex justify-center items-center px-6 py-3 bg-neutral-900 text-white uppercase tracking-[0.25em] text-xs font-semibold hover:bg-neutral-700 transition"
+                :disabled="loading"
+              >
+                <span v-if="!loading">Fetch</span>
+                <span v-else class="flex items-center gap-2">
+                  <svg
+                    class="animate-spin h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      class="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      stroke-width="4"
+                    ></circle>
+                    <path
+                      class="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v4l3.536-3.536L12 0v4a8 8 0 100 16v-4l-3.536 3.536L12 24v-4a8 8 0 01-8-8z"
+                    ></path>
+                  </svg>
+                  Loading
+                </span>
+              </button>
+            </div>
+          </form>
+
+          <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+            <div class="flex flex-col gap-3">
+              <label
+                class="text-xs uppercase tracking-[0.3em] text-neutral-500"
+              >
+                Sort
+              </label>
+              <select
+                v-model="sortOrder"
+                class="border border-neutral-200 focus:border-neutral-900 focus:ring-0 rounded-none px-4 py-3 text-base"
+              >
+                <option value="relevance">Relevance</option>
+                <option value="price-low">Price: Low to High</option>
+                <option value="price-high">Price: High to Low</option>
+                <option value="merchant">Merchant A-Z</option>
+              </select>
+            </div>
+            <div class="flex flex-col gap-3">
+              <label
+                class="text-xs uppercase tracking-[0.3em] text-neutral-500"
+              >
+                Price ceiling
+              </label>
+              <div class="flex items-center gap-3">
+                <input
+                  v-model.number="priceCap"
+                  type="number"
+                  min="0"
+                  placeholder="No limit"
+                  class="w-full border border-neutral-200 focus:border-neutral-900 focus:ring-0 rounded-none px-4 py-3 text-base"
+                />
+                <button
+                  type="button"
+                  class="text-xs uppercase tracking-[0.25em] underline underline-offset-4"
+                  @click="priceCap = null"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <section class="grid gap-4 sm:grid-cols-3">
+          <article
+            class="border border-neutral-200 px-5 py-6 flex flex-col gap-3"
+          >
+            <p class="text-xs uppercase tracking-[0.3em] text-neutral-500">
+              Total Products
+            </p>
+            <p class="text-3xl font-semibold">{{ filteredProducts.length }}</p>
+          </article>
+          <article
+            class="border border-neutral-200 px-5 py-6 flex flex-col gap-3"
+          >
+            <p class="text-xs uppercase tracking-[0.3em] text-neutral-500">
+              Unique Merchants
+            </p>
+            <p class="text-3xl font-semibold">{{ merchantCount }}</p>
+          </article>
+          <article
+            class="border border-neutral-200 px-5 py-6 flex flex-col gap-3"
+          >
+            <p class="text-xs uppercase tracking-[0.3em] text-neutral-500">
+              Price Window
+            </p>
+            <p class="text-3xl font-semibold">
+              <template v-if="filteredProducts.length">
+                {{ formatCurrency(minPrice) }} – {{ formatCurrency(maxPrice) }}
+              </template>
+              <template v-else> — </template>
+            </p>
+          </article>
+        </section>
+      </section>
+
+      <main class="max-w-6xl mx-auto">
+        <div
+          v-if="error"
+          class="border border-red-200 bg-red-50 px-6 py-5 mb-10 text-sm leading-relaxed text-red-700"
+        >
+          {{ error }}
+        </div>
+
+        <transition-group
+          name="fade-up"
+          tag="div"
+          class="columns-1 sm:columns-2 lg:columns-3 gap-6 [column-fill:_balance]"
+        >
+          <article
+            v-for="product in filteredProducts"
+            :key="product.id"
+            class="mb-6 break-inside-avoid border border-neutral-200 shadow-subtle bg-white flex flex-col"
+          >
+            <div class="aspect-[4/3] bg-neutral-100 overflow-hidden">
+              <img
+                v-if="product.image"
+                :src="product.image"
+                :alt="product.name"
+                class="w-full h-full object-cover transition duration-500 hover:scale-105"
+              />
+              <div
+                v-else
+                class="w-full h-full flex items-center justify-center text-xs uppercase tracking-[0.3em] text-neutral-400"
+              >
+                No image
+              </div>
+            </div>
+            <div class="flex flex-col gap-4 p-6 flex-1">
+              <p class="text-xs uppercase tracking-[0.3em] text-neutral-500">
+                {{ product.merchant || 'Unknown Merchant' }}
+              </p>
+              <h2 class="text-lg font-semibold leading-tight">
+                {{ product.name }}
+              </h2>
+              <p
+                v-if="product.description"
+                class="text-sm leading-relaxed text-neutral-600 line-clamp-3"
+              >
+                {{ product.description }}
+              </p>
+              <div class="flex items-baseline justify-between mt-auto">
+                <span class="text-xl font-semibold">
+                  {{ formatCurrency(product.price) }}
+                </span>
+                <button
+                  @click="openProduct(product)"
+                  class="uppercase tracking-[0.25em] text-xs font-semibold text-accent hover:text-accent-dark transition"
+                >
+                  View
+                </button>
+              </div>
+            </div>
+          </article>
+        </transition-group>
+
+        <div
+          v-if="!filteredProducts.length && !loading"
+          class="border border-dashed border-neutral-300 text-neutral-500 text-center py-24 mt-12 tracking-[0.3em] uppercase text-xs"
+        >
+          No products to display — adjust your filters or fetch with Sovrn.
+        </div>
+      </main>
+
+      <div
+        v-if="loading"
+        class="fixed bottom-6 right-6 bg-neutral-900 text-white px-6 py-3 shadow-subtle text-xs uppercase tracking-[0.3em]"
+      >
+        Syncing with Sovrn Commerce…
+      </div>
+
+      <transition name="fade">
+        <div
+          v-if="openSettings"
+          class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center px-6"
+        >
+          <div
+            class="bg-white w-full max-w-xl border border-neutral-900 p-8 space-y-6"
+          >
+            <header class="space-y-3">
+              <p class="text-xs uppercase tracking-[0.3em] text-neutral-500">
+                Sovrn Credentials
+              </p>
+              <h2 class="text-2xl font-semibold">Connect to live inventory</h2>
+              <p class="text-sm text-neutral-600 leading-relaxed">
+                Provide your Sovrn Commerce Publisher ID and API token to fetch
+                real-time catalog data. Values are encrypted at rest in local
+                storage and used solely for API requests.
+              </p>
+            </header>
+
+            <form class="space-y-5" @submit.prevent="saveCredentials">
+              <div class="space-y-2">
+                <label
+                  class="text-xs uppercase tracking-[0.3em] text-neutral-500"
+                >
+                  Publisher ID
+                </label>
+                <input
+                  v-model="credentials.publisherId"
+                  type="text"
+                  autocomplete="off"
+                  placeholder="e.g. 12345"
+                  class="w-full border border-neutral-200 focus:border-neutral-900 focus:ring-0 rounded-none px-4 py-3 text-base"
+                  required
+                />
+              </div>
+              <div class="space-y-2">
+                <label
+                  class="text-xs uppercase tracking-[0.3em] text-neutral-500"
+                >
+                  API Token
+                </label>
+                <input
+                  v-model="credentials.apiToken"
+                  type="password"
+                  autocomplete="off"
+                  placeholder="Paste your Sovrn token"
+                  class="w-full border border-neutral-200 focus:border-neutral-900 focus:ring-0 rounded-none px-4 py-3 text-base"
+                  required
+                />
+              </div>
+              <div class="space-y-2">
+                <label
+                  class="text-xs uppercase tracking-[0.3em] text-neutral-500 flex items-center gap-2"
+                >
+                  Country
+                </label>
+                <select
+                  v-model="market"
+                  class="w-full border border-neutral-200 focus:border-neutral-900 focus:ring-0 rounded-none px-4 py-3 text-base"
+                >
+                  <option value="US">United States</option>
+                  <option value="UK">United Kingdom</option>
+                  <option value="DE">Germany</option>
+                  <option value="FR">France</option>
+                  <option value="CA">Canada</option>
+                  <option value="AU">Australia</option>
+                </select>
+              </div>
+
+              <div class="flex justify-between pt-4">
+                <button
+                  type="button"
+                  class="text-xs uppercase tracking-[0.25em] underline underline-offset-4 text-neutral-500"
+                  @click="clearCredentials"
+                >
+                  Clear credentials
+                </button>
+                <div class="flex gap-3">
+                  <button
+                    type="button"
+                    class="border border-neutral-900 px-5 py-2 text-xs uppercase tracking-[0.3em]"
+                    @click="openSettings = false"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    class="bg-neutral-900 text-white px-6 py-2 text-xs uppercase tracking-[0.35em]"
+                  >
+                    Save &amp; Sync
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </transition>
+    </div>
+
+    <script type="module">
+      import {
+        createApp,
+        ref,
+        reactive,
+        computed,
+        watch,
+        onMounted,
+      } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+
+      const FALLBACK_PRODUCTS = [
+        {
+          id: "fallback-1",
+          name: "Muji Wall Clock",
+          merchant: "MUJI",
+          price: 89.0,
+          image:
+            "https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?auto=format&fit=crop&w=640&q=80",
+          description:
+            "Minimalist wall clock with silent sweep movement, designed with impeccable clarity for modern interiors.",
+          clickUrl: "https://www.muji.com/",
+        },
+        {
+          id: "fallback-2",
+          name: "Braun Classic Alarm Clock",
+          merchant: "Braun",
+          price: 35.0,
+          image:
+            "https://images.unsplash.com/photo-1508695641621-17134780e43c?auto=format&fit=crop&w=640&q=80",
+          description:
+            "Functional travel alarm clock inspired by Dieter Rams. Crisp type, luminous hands, and reliable quartz movement.",
+          clickUrl: "https://us.braun-clocks.com/",
+        },
+        {
+          id: "fallback-3",
+          name: "Norm Architects Kettle Teapot",
+          merchant: "Menu",
+          price: 94.75,
+          image:
+            "https://images.unsplash.com/photo-1524592094714-0f0654e20314?auto=format&fit=crop&w=640&q=80",
+          description:
+            "Handblown glass teapot with minimalist tea egg sphere. Elegant silhouette merging tradition with modernity.",
+          clickUrl: "https://us.menu.as/",
+        },
+        {
+          id: "fallback-4",
+          name: "Hay About A Chair AAC22",
+          merchant: "HAY",
+          price: 295.0,
+          image:
+            "https://images.unsplash.com/photo-1616628182507-8c4a5bf4c876?auto=format&fit=crop&w=640&q=80",
+          description:
+            "Contemporary side chair with balanced proportions, matte shell, and solid oak legs. Perfect for dining or studio use.",
+          clickUrl: "https://hay.com/",
+        },
+        {
+          id: "fallback-5",
+          name: "Fellow Stagg EKG Kettle",
+          merchant: "Fellow",
+          price: 169.0,
+          image:
+            "https://images.unsplash.com/photo-1622495890882-3c15a276c383?auto=format&fit=crop&w=640&q=80",
+          description:
+            "Precision electric pour-over kettle with variable temperature control and minimalist matte black finish.",
+          clickUrl: "https://fellowproducts.com/",
+        },
+        {
+          id: "fallback-6",
+          name: "Leica Q2 Monochrom",
+          merchant: "Leica",
+          price: 5995.0,
+          image:
+            "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=640&q=80",
+          description:
+            "Full-frame digital camera dedicated to black-and-white photography. Pure design with tactile controls.",
+          clickUrl: "https://leica-camera.com/",
+        },
+      ];
+
+      const STORAGE_KEY = "wbshop.credentials.v1";
+
+      createApp({
+        setup() {
+          const openSettings = ref(false);
+          const loading = ref(false);
+          const error = ref("");
+          const query = ref("");
+          const sortOrder = ref("relevance");
+          const priceCap = ref(null);
+          const market = ref("US");
+          const credentials = reactive({
+            publisherId: "",
+            apiToken: "",
+          });
+          const products = ref([]);
+
+          const loadCredentials = () => {
+            try {
+              const stored = localStorage.getItem(STORAGE_KEY);
+              if (stored) {
+                const parsed = JSON.parse(stored);
+                credentials.publisherId = parsed.publisherId || "";
+                credentials.apiToken = parsed.apiToken || "";
+                market.value = parsed.market || "US";
+              }
+            } catch (storageError) {
+              console.warn("Unable to parse stored credentials", storageError);
+            }
+          };
+
+          const persistCredentials = () => {
+            const payload = JSON.stringify({
+              publisherId: credentials.publisherId,
+              apiToken: credentials.apiToken,
+              market: market.value,
+            });
+            localStorage.setItem(STORAGE_KEY, payload);
+          };
+
+          const sanitizedProducts = computed(() =>
+            (products.value.length ? products.value : FALLBACK_PRODUCTS).map(
+              (product) => ({
+                ...product,
+                price: Number.isFinite(product.price)
+                  ? Number(product.price)
+                  : null,
+                merchant: product.merchant?.trim() || "Unknown Merchant",
+                image: product.image || product.imageUrl || "",
+                description: product.description || product.summary || "",
+              }),
+            ),
+          );
+
+          const filteredProducts = computed(() => {
+            let items = [...sanitizedProducts.value];
+
+            if (priceCap.value) {
+              items = items.filter(
+                (product) => product.price && product.price <= priceCap.value,
+              );
+            }
+
+            switch (sortOrder.value) {
+              case "price-low":
+                items.sort((a, b) => (a.price || 0) - (b.price || 0));
+                break;
+              case "price-high":
+                items.sort((a, b) => (b.price || 0) - (a.price || 0));
+                break;
+              case "merchant":
+                items.sort((a, b) => a.merchant.localeCompare(b.merchant));
+                break;
+              default:
+                break;
+            }
+
+            return items;
+          });
+
+          const merchantCount = computed(() => {
+            const merchants = new Set(
+              filteredProducts.value.map((product) => product.merchant),
+            );
+            return merchants.size;
+          });
+
+          const minPrice = computed(() => {
+            const prices = filteredProducts.value
+              .map((item) => item.price)
+              .filter((price) => Number.isFinite(price));
+            return prices.length ? Math.min(...prices) : null;
+          });
+
+          const maxPrice = computed(() => {
+            const prices = filteredProducts.value
+              .map((item) => item.price)
+              .filter((price) => Number.isFinite(price));
+            return prices.length ? Math.max(...prices) : null;
+          });
+
+          const formatCurrency = (value) => {
+            if (!Number.isFinite(Number(value))) {
+              return "—";
+            }
+
+            return new Intl.NumberFormat("en-US", {
+              style: "currency",
+              currency: "USD",
+              maximumFractionDigits: 2,
+            }).format(value);
+          };
+
+          const openProduct = (product) => {
+            if (product.clickUrl) {
+              window.open(product.clickUrl, "_blank", "noopener");
+            }
+          };
+
+          const clearCredentials = () => {
+            credentials.publisherId = "";
+            credentials.apiToken = "";
+            persistCredentials();
+          };
+
+          const saveCredentials = () => {
+            persistCredentials();
+            openSettings.value = false;
+            handleSearch();
+          };
+
+          const buildRequestUrl = () => {
+            const endpoint =
+              "https://affiliate-api.sovrn.com/api/product/v1/search";
+            const url = new URL(endpoint);
+            if (query.value) {
+              url.searchParams.set("q", query.value);
+            }
+            url.searchParams.set("limit", "30");
+            url.searchParams.set("offset", "0");
+            url.searchParams.set("country", market.value);
+            url.searchParams.set("publisher_id", credentials.publisherId);
+            return url;
+          };
+
+          const fetchProducts = async () => {
+            if (!credentials.publisherId || !credentials.apiToken) {
+              products.value = FALLBACK_PRODUCTS;
+              return;
+            }
+
+            loading.value = true;
+            error.value = "";
+
+            try {
+              const url = buildRequestUrl();
+              const response = await fetch(url.toString(), {
+                headers: {
+                  Authorization: `Bearer ${credentials.apiToken}`,
+                  Accept: "application/json",
+                },
+              });
+
+              if (!response.ok) {
+                const message = `Sovrn request failed (${response.status})`;
+                throw new Error(message);
+              }
+
+              const payload = await response.json();
+              const items = payload?.products || payload?.data || [];
+
+              if (!Array.isArray(items) || !items.length) {
+                products.value = [];
+                return;
+              }
+
+              products.value = items.map((item) => ({
+                id: item.id || item.productId || crypto.randomUUID(),
+                name: item.name || item.title,
+                merchant: item.merchant?.name || item.merchant,
+                price: item.price?.value || item.price || item.salePrice,
+                image: item.images?.[0]?.url || item.imageUrl || item.image,
+                description: item.description || "",
+                clickUrl: item.clickUrl || item.url || item.link,
+              }));
+            } catch (requestError) {
+              console.error("Failed to retrieve products", requestError);
+              error.value =
+                "Unable to fetch data from Sovrn Commerce. Showing curated collection.";
+              products.value = FALLBACK_PRODUCTS;
+            } finally {
+              loading.value = false;
+            }
+          };
+
+          const handleSearch = () => {
+            fetchProducts();
+          };
+
+          onMounted(() => {
+            loadCredentials();
+            fetchProducts();
+          });
+
+          watch([sortOrder, priceCap], () => {
+            // Trigger recomputation through reactive props.
+          });
+
+          return {
+            openSettings,
+            credentials,
+            query,
+            products,
+            filteredProducts,
+            merchantCount,
+            minPrice,
+            maxPrice,
+            formatCurrency,
+            openProduct,
+            loading,
+            error,
+            sortOrder,
+            priceCap,
+            market,
+            clearCredentials,
+            saveCredentials,
+            handleSearch,
+          };
+        },
+      }).mount("#app");
+    </script>
+
+    <style>
+      .fade-enter-active,
+      .fade-leave-active {
+        transition: opacity 200ms ease;
+      }
+      .fade-enter-from,
+      .fade-leave-to {
+        opacity: 0;
+      }
+      .fade-up-enter-active,
+      .fade-up-leave-active {
+        transition: all 240ms ease;
+      }
+      .fade-up-enter-from {
+        transform: translateY(16px);
+        opacity: 0;
+      }
+      .fade-up-leave-to {
+        transform: translateY(-16px);
+        opacity: 0;
+      }
+    </style>
+  </body>
+</html>
